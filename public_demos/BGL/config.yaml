@@ -1,0 +1,126 @@
+# SPDX-FileCopyrightText: 2026 Deutsche Telekom AG
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# ADF public demo — BGL — chronological split
+# Every value below is the one that produced the published result; the notebook reads this file.
+
+dataset:
+  name: BGL
+  source_page: https://www.usenix.org/cfdr-data
+  url: http://0b4af6cdc2f0c5998459-c0245c5c937c5dedcca3f1764ecc9b2f.r43.cf2.rackcdn.com/hpc4/bgl2.gz
+  file: bgl2.gz
+  size_bytes: 62936464
+  md5: 479057cc2c8935a896e65479a4fcb850
+  sha256: 6e1d4bf0f1f1b06f1331c8e70a2ac9c7f9948d4a6cd154ba7f80b8ba6c17fc14
+  decompressed:
+    file: bgl2
+    sha256: ded4e97c0dabe26ddb5a2237c07d9027ea9b322b7329eb166683ee9a0f8c4faf
+
+base_model:
+  hf_id: sentence-transformers/all-MiniLM-L6-v2
+  revision: 1110a243fdf4706b3f48f1d95db1a4f5529b4d41
+
+split:
+  method: chronological
+  train_ratio: 0.8              # everything before this point is train + validation
+  train_share_of_fit: 0.75       # of that, the first share trains and the rest validates
+
+windows:
+  size: 5
+  step: 1
+  per_node: true                  # windows never mix lines of different nodes
+  pad_line: -1                    # short nodes are padded; padding is masked
+
+drain:
+  sim_th: 0.3
+  depth: 3
+  max_children: 100
+  parametrize_numeric_tokens: true
+  use_polars_masking: true
+  trim_max_length: null
+  fit_splits: [train, val]        # normal lines only
+  online_fit:
+    splits: [val, test]
+    sim_th: 0.9
+
+simcse:
+  min_contrastive_gap: 0.8
+  max_rounds: 10
+  epochs_per_round: 2
+  learning_rate: 2.0e-05
+  warmup_ratio: 0.1
+  batch_size: 16
+
+autoencoder:
+  model_name: LSTMAutoEncoder
+  model_args:
+    input_dim: 384
+    hidden_dim: 64
+    num_layers: 2
+    sigma: 0.0
+    dropout: 0.3411550551810256
+    enc_dropout: 0.1373937180589323
+    dec_dropout: 0.057216217890820875
+  loss: MSELoss
+  optimizer: AdamW
+  optimizer_config:
+    lr: 0.0068237140846376864
+    weight_decay: 5.34932229264315e-06
+    betas: [0.7401201201664434, 0.9093345244757591]
+  scheduler: OneCycleLR
+  scheduler_config:            # total_steps is computed from the number of training windows
+    max_lr: 0.0068237140846376864
+    div_factor: 24.0
+    final_div_factor: 100.0
+    pct_start: 0.2362954896526269
+    three_phase: false
+
+training:
+  max_epochs: 25
+  batch_size: 128
+  seed: 42
+  checkpoint_monitor: val_loss   # best epoch by validation loss
+  val_fraction_for_checkpoint: 0.5   # the first half of the validation windows selects the epoch
+
+evaluation:
+  unit: line
+  verdict_rule: own_timestep      # a line takes its own step error in the window that ends on it
+  threshold: 0.0016306409961543977
+  threshold_note: >-
+    Chosen by threshold_selector (section 7.3) on the 3,798,370 lines of the training and
+    validation periods, 302,333 of them anomalous, with a copy of the parser that has
+    seen no test line. No test line is involved. For reproducibility:
+    the nearest test line score lies 8.0e-06 away.
+  test_lines: 949593
+  test_anomalous: 46365
+  expected:
+    tp: 45523
+    fp: 717
+    fn: 842
+    precision: 0.98449
+    recall: 0.98184
+    f1: 0.98317
+
+artifacts:
+  autoencoder:
+    file: artifacts/autoencoder.ckpt
+    sha256: 567f66b6af1dacefdd6697fa851f745c28f4f8e0ab50246ebb7168317330e277
+  template_embeddings:
+    file: artifacts/template_embeddings.npy
+    sha256: 8208bac700b56444526d9fc400761ed1a36039eb387f4db30bb1f9d408300e92
+  templates:
+    file: artifacts/templates.json
+    sha256: f4e1392b86d97e68fcc0041554e05e468f6743567808d59e81275372de6db0b6
+  drain_state:
+    file: artifacts/drain/state.bin
+    sha256: 7e4a14a4a5813daee5822a14ed1f184e75292ab6dec69b7072b585a30f67b128
+  drain_config:
+    file: artifacts/drain/config.ini
+    sha256: 715d70d12a28783ce46d8b2a139005937f33eda31b8caa50742748127801c643
+  threshold_templates:
+    file: artifacts/threshold_templates.json
+    sha256: 03b7ca746ff927e447dfd1e980adb9c19d31e6775f2d433afd434818325922c1
+  threshold_embeddings:
+    file: artifacts/threshold_embeddings.npy
+    sha256: c8f2ec8cbcbd6f65bee9afbf0bdf4b51a6a0a510b4b68e5a1ef0bb0e79206e92

@@ -1,3 +1,46 @@
 # SPDX-FileCopyrightText: 2023 Deutsche Telekom AG
 #
 # SPDX-License-Identifier: CC0-1.0
+
+# Python
+*.py[cod]
+__pycache__/
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.pyo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environments
+.venv
+venv/
+env/
+.env
+.env/
+
+# Editors
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+
+# Caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+
+# Data and run artefacts
+data/
+*.parquet
+*.csv
+*.h5
+*.hdf5
+*.pkl
+*.joblib
+lightning_logs/
