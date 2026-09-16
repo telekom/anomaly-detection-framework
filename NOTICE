@@ -1,0 +1,16 @@
+Anomaly Detection Framework (ADF)
+Copyright 2026 Deutsche Telekom AG
+
+This product includes software developed at Deutsche Telekom AG.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+software except in compliance with the License. A copy of the License is in
+LICENSES/Apache-2.0.txt. Documentation and assets may be licensed under CC-BY-4.0, and
+files taken from the repository template under CC0-1.0; every file states its own
+licence following the REUSE standard.
+
+The reference artefacts under public_demos/*/artifacts (Drain state, template
+vocabularies, template embeddings and trained model checkpoints) were computed from the
+public log data sets HDFS v1 (LogHub), BGL and Thunderbird (USENIX Computer Failure Data
+Repository). The data sets themselves are not part of this repository; public_demos/README.md
+names their sources and how to obtain them.

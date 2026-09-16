@@ -1,0 +1,122 @@
+# SPDX-FileCopyrightText: 2026 Deutsche Telekom AG
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# ADF public demo — HDFS v1, block-level evaluation
+# Every value below is the one that produced the published result; the notebook reads this file.
+
+dataset:
+  name: HDFS_v1
+  source_page: https://github.com/logpai/loghub
+  url: https://zenodo.org/records/8196385/files/HDFS_v1.zip?download=1
+  file: HDFS_v1.zip
+  size_bytes: 186645559
+  md5: 76a24b4d9a6164d543fb275f89773260
+  sha256: 04f919f2185821f23f045dca611a7586429bdabc601bd7b43f30005f8e289b01
+  contents:
+    log:
+      file: HDFS.log
+      sha256: 0783096174d7832c618337f9609e06e04abd86ddd7089b3c12b407e63bfebc52
+    labels:
+      file: preprocessed/anomaly_label.csv
+      sha256: 1c711ed6c8848fc3243fb4d092f172f31d128c8a6ec7f26ebba72ab931885ed8
+
+base_model:
+  hf_id: sentence-transformers/all-MiniLM-L6-v2
+  revision: 1110a243fdf4706b3f48f1d95db1a4f5529b4d41
+
+split:
+  method: random_by_block       # a block never contributes to two splits
+  seed: 42
+  train_fraction: 0.7           # of the normal blocks
+  val_fraction: 0.15            # of the normal blocks; the rest are test
+  anomalous_blocks:             # never trained on
+    threshold_share: 0.1        # a seeded share is set aside to choose the threshold, together with val
+    seed: 42
+    rest: test
+
+windows:
+  size: 10
+  step: 1
+  short_blocks: zero_padding_without_mask   # blocks under 10 logs become one window, padding NOT masked
+
+drain:
+  sim_th: 0.82
+  depth: 7
+  max_children: 200
+  parametrize_numeric_tokens: true
+  use_polars_masking: true
+  trim_max_length: 1000
+  fit_split: train              # normal blocks only
+  online_fit: true              # unseen lines are fitted into Drain at inference, block by block
+
+simcse:
+  min_contrastive_gap: 0.7
+  max_rounds: 10
+  epochs_per_round: 2
+  learning_rate: 2.0e-05
+  warmup_ratio: 0.1
+  batch_size: 16
+
+autoencoder:
+  model_name: LSTMAutoEncoder
+  model_args:
+    input_dim: 384
+    hidden_dim: 128
+    num_layers: 2
+    dropout: 0.0
+  loss: MSELoss
+  optimizer: AdamW
+  optimizer_config:
+    lr: 0.0001
+    weight_decay: 1.0e-05
+    betas: [0.7485, 0.999]
+  scheduler: OneCycleLR
+  scheduler_config:            # total_steps is computed from the number of training windows
+    max_lr: 0.0001
+    div_factor: 25.0
+    final_div_factor: 100.0
+    pct_start: 0.2
+    three_phase: true
+
+training:
+  max_epochs: 20
+  batch_size: 1024
+  seed: 42
+  precision: 32-true
+
+evaluation:
+  unit: block
+  verdict_rule: max_window      # a block is anomalous when any of its windows scores above the threshold
+  threshold: 0.00011410938168410212
+  threshold_note: >-
+    Chosen by threshold_selector (section 6.4) on the 83,733 normal validation blocks and the
+    1,684 anomalous blocks set aside for it; no test block is involved. For reproducibility:
+    the nearest test block score lies 7.7e-07 away.
+  test_blocks_anomalous: 15154
+  test_blocks_normal: 83734
+  threshold_blocks_anomalous: 1684
+  expected:
+    tp: 15146
+    fp: 110
+    fn: 8
+    precision: 0.99279
+    recall: 0.99947
+    f1: 0.99612
+
+artifacts:
+  autoencoder:
+    file: artifacts/autoencoder.ckpt
+    sha256: 467c32290db0c77a8de60c57a3f89639a480c00c97c864f1544bcfebf503f609
+  template_embeddings:
+    file: artifacts/template_embeddings.npy
+    sha256: c4e99d9bfeb380d84c27d5623dde5b16a3654c1a4f4bf3f84acffb8f899ee6ae
+  templates:
+    file: artifacts/templates.json
+    sha256: 86e8106ef3949a3b3d843cb1e24f555dcbffac07d3e086bae1569ed2f511f4dd
+  drain_state:
+    file: artifacts/drain/state.bin
+    sha256: 215a389e2118d8fbd2592874ed9e0f1abfb62d14fb8ad6ace9958b2ce837f011
+  drain_config:
+    file: artifacts/drain/config.ini
+    sha256: 76cabd63eb42f2e880d90494cdf1620c6ff3e87ad9cf54321ff28fc3b0987747
