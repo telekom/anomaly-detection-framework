@@ -1,0 +1,53 @@
+# SPDX-FileCopyrightText: 2026 Deutsche Telekom AG
+#
+# SPDX-License-Identifier: Apache-2.0
+
+default_language_version:
+  python: python3.11.11        
+
+default_stages: [pre-push]      #  or commit stage 
+
+repos:
+- repo: local
+  hooks:
+    # ---- 0 ▸ Install all extras ----
+    - id: install-extras
+      name: install all extras
+      entry: uv pip install -e .[all] #-r pyproject.toml --all-extras
+      language: system
+      pass_filenames: false
+      always_run: true
+      stages: [pre-push]
+
+    # ---- 1 ▸ Ruff format  ----
+    - id: ruff-format
+      name: ruff format
+      entry: uv run --active ruff format src --config=pyproject.toml
+      language: system
+      pass_filenames: false     # pre-commit does not support passing filenames to ruff
+      always_run: true
+      stages: [pre-push]
+
+    # ---- 2 ▸ Ruff lint ---------------------------------
+    - id: ruff-check
+      name: ruff check
+      entry: uv run --active ruff check src --config=pyproject.toml
+      language: system
+      pass_filenames: false
+      stages: [pre-push]
+
+    # ---- 3 ▸ Mypy strict --------------------------------
+    - id: mypy
+      name: mypy strict
+      entry: uv run --active mypy --config-file=pyproject.toml --pretty --strict src
+      language: system
+      pass_filenames: false
+      stages: [pre-push]
+
+    # ---- 4 ▸ Pytest -------------------------------------
+    - id: pytest
+      name: pytest
+      entry: uv run --active pytest
+      language: system
+      pass_filenames: false
+      stages: [pre-push]
