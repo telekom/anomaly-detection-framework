@@ -11,3 +11,30 @@ version = 1
 # precedence = "aggregate"
 # SPDX-FileCopyrightText = "2022 Free Software Foundation Europe e.V. <https://fsfe.org>"
 # SPDX-License-Identifier = "CC0-1.0"
+
+# Files that cannot carry an SPDX header: notebooks (JSON), the reference artefacts of the demos
+# (Drain state, template vocabularies, embeddings, model checkpoints) and the dependency lock file.
+
+[[annotations]]
+path = ["public_demos/**/*.ipynb"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Deutsche Telekom AG"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = ["public_demos/**/artifacts/**"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Deutsche Telekom AG"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = ["uv.lock"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Deutsche Telekom AG"
+SPDX-License-Identifier = "Apache-2.0"
+
+[[annotations]]
+path = ["NOTICE"]
+precedence = "aggregate"
+SPDX-FileCopyrightText = "2026 Deutsche Telekom AG"
+SPDX-License-Identifier = "Apache-2.0"
